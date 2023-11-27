@@ -1,0 +1,261 @@
+<?xml version="1.0"?>
+<component>
+
+<?component error="true" debug="true"?>
+
+<registration
+	description="ASP Chemistry Library"
+	progid="ScottVM.Chemistry"
+	version="1.00"
+	classid="{3d9fd93b-fb1e-4829-959b-6fd94685b453}"
+>
+</registration>
+
+<public>
+	<method name="getElementName">
+		<PARAMETER name="atomicNumber"/>
+	</method>
+	<method name="getElementSymbol">
+		<PARAMETER name="atomicNumber"/>
+	</method>
+	<method name="getElectronConfiguration">
+		<PARAMETER name="atomicNumber"/>
+	</method>
+</public>
+
+<implements type="ASP" id="ASP"/>
+
+<script language="VBScript">
+<![CDATA[
+		' ASP Chemistry Library
+		' 
+		' Copyright (c) 2023, Scott Vander Molen; some rights reserved.
+		' 
+		' This work is licensed under a Creative Commons Attribution 4.0 International License.
+		' To view a copy of this license, visit https://creativecommons.org/licenses/by/4.0/
+		' 
+		' @author  Scott Vander Molen
+		' @version 2.0
+		' @since   2023-11-27
+		
+		Response.CodePage = 65001 
+		Response.CharSet = "UTF-8"
+		
+		' Elements by name
+		ElementNames = Array(null, _
+			"Hydrogen", "Helium", "Lithium", "Beryllium", "Boron", "Carbon", "Nitrogen", "Oxygen", "Fluorine", "Neon", _
+			"Sodium", "Magnesium", "Aluminium", "Silicon", "Phosphorus", "Sulfur", "Chlorine", "Argon", "Potassium", "Calcium", _
+			"Scandium", "Titanium", "Vanadium", "Chromium", "Manganese", "Iron", "Cobalt", "Nickel", "Copper", "Zinc", _
+			"Gallium", "Germanium", "Arsenic", "Selenium", "Bromine", "Krypton", "Rubidium", "Strontium", "Yttrium", "Zirconium", _
+			"Niobium", "Molybdenum", "Technetium", "Ruthenium", "Rhodium", "Palladium", "Silver", "Cadmium", "Indium", "Tin", _
+			"Antimony", "Tellurium", "Iodine", "Xenon", "Caesium", "Barium", "Lanthanum", "Cerium", "Praseodymium", "Neodymium", _
+			"Promethium", "Samarium", "Europium", "Gadolinium", "Terbium", "Dysprosium", "Holmium", "Erbium", "Thulium", "Ytterbium", _
+			"Lutetium", "Hafnium", "Tantalum", "Tungsten", "Rhenium", "Osmium", "Iridium", "Platinum", "Gold", "Mercury", _
+			"Thallium", "Lead", "Bismuth", "Polonium", "Astatine", "Radon", "Francium", "Radium", "Actinium", "Thorium", _
+			"Protactinium", "Uranium", "Neptunium", "Plutonium", "Americium", "Curium", "Berkelium", "Californium", "Einsteinium", "Fermium", _
+			"Mendelevium", "Nobelium", "Lawrencium", "Rutherfordium", "Dubnium", "Seaborgium", "Bohrium", "Hassium", "Meitnerium", "Darmstadtium", _
+			"Roentgenium", "Copernicium", "Nihonium", "Flerovium", "Moscovium", "Livermorium", "Tennessine", "Oganesson" _
+		)
+		
+		' Elements by symbol
+		ElementSymbols = Array(null, _
+			"H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", _
+			"Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", _
+			"Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", _
+			"Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", _
+			"Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", _
+			"Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", _
+			"Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", _
+			"Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", _
+			"Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", _
+			"Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", _
+			"Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", _
+			"Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og" _
+		)
+		
+		' List of subshell names in order of filling.
+		Subshells = Array("1s", "2s", "2p", "3s", "3p", "4s", "3d", "4p", "5s", "4d", "5p", "6s", "4f", "5d", "6p", "7s", "5f", "6d", "7p", "8s", "5g", "6f", "7d", "8p", "9s", "6g", "7f", "8d", "9p", "10s", "6h", "7g", "8f", "9d", "10p", "11s", "7h", "8g", "9f", "10d", "11p", "12s", "7i", "8h", "9g", "10f", "11d", "12p", "13s", "8i", "9h", "10g", "11f", "12d", "13p", "14s")
+		
+		' Format a string in proper case.
+		' 
+		' @param someString The string to convert.
+		' @return string The string which has been converted to proper case.
+		function PCase(someString)
+			dim position
+			dim space
+			dim result
+			dim regEx
+		
+			position = 1
+			set regEx = new RegExp
+			regEx.Pattern = "^(Mc[A-Z]{1}[A-Za-z]|O\'[A-Z]{1}[A-Za-z]|Mac[A-Z]{1}[A-Za-z])"
+
+			' Loop through the string checking for spaces.
+			do while InStr(position, someString, " ", 1) <> 0
+				' Find the position of the next space.
+				space = InStr(position, someString, " ", 1)
+		
+				' Capitalize (and append to our output) the first character after the space which was handled by the previous run through the loop.
+				result = result & UCase(Mid(someString, position, 1))
+		
+				' Check for situations like McDonald or O'Brien.
+				if not regEx.Test(Mid(someString, position, space - position)) then
+					' Lowercase (and append to our output) the rest of the string up to and including the current space.
+					result = result & LCase(Mid(someString, position + 1, space - position))
+				else
+					if Left(Mid(someString, position), 3) = "Mac" then
+						' Leave the next three characters intact.
+						result = result & Mid(someString, position + 1, 3)
+						' Append the rest of the string.
+						result = result & LCase(Mid(someString, position + 4, space - position + 4))
+					else
+						' Leave the next two characters intact.
+						result = result & Mid(someString, position + 1, 2)
+						' Append the rest of the string.
+						result = result & LCase(Mid(someString, position + 3, space - position + 3))
+					end if
+				end if
+
+				position = space + 1
+			loop
+
+			' Capitalize the first character of the last word after the final space (or the only word if there were no spaces).
+			result = result & UCase(Mid(someString, position, 1))
+
+			' Check for situations like McDonald or O'Brien.
+			if not regEx.Test(Mid(someString, position)) then
+				' Lowercase (and append to our output) the rest of the string up to and including the current space.
+				result = result & LCase(Mid(someString, position + 1))
+			else
+				if Left(Mid(someString, position), 3) = "Mac" then
+					' Leave the next three characters intact.
+					result = result & Mid(someString, position + 1, 3)
+					' Append the rest of the string.
+					result = result & LCase(Mid(someString, position + 4))
+				else
+					' Leave the next two characters intact.
+					result = result & Mid(someString, position + 1, 2)
+					' Append the rest of the string.
+					result = result & LCase(Mid(someString, position + 3))
+				end if
+			end if
+
+			set regEx = Nothing
+			PCase = result
+		end function
+
+		' Retrieve element name, with support for elements that don't have names yet.
+		' 
+		' @param atomicNumber The atomic number of the chemical element.
+		' @return string The name of the chemical element.
+		function getElementName(atomicNumber)
+			dim result
+			dim roots
+			
+			result = ""
+			roots = Array("nil", "un", "bi", "tri", "quad", "pent", "hex", "sept", "oct", "enn")
+			
+			if atomicNumber <= UBound(ElementNames) then
+				result = ElementNames(atomicNumber)
+			else
+				for i = 1 to len(cStr(atomicNumber))
+					result = result & roots(mid(cStr(atomicNumber), i, 1))
+				next
+				
+				result = pcase(result) & "ium"
+				
+				' If bi or tri is followed by the ending ium (i.e. the last digit is 2 or 3), the result is '-bium' or -'trium', not '-biium' or '-triium'.
+				result = replace(result, "ii", "i")
+				
+				' If enn is followed by nil (i.e. the sequence -90- occurs), the result is '-ennil-', not '-ennnil-'.
+				result = replace(result, "nnn", "nn")
+			end if
+			
+			getElementName = result
+		end function
+		
+		' Retrieve element symbol, with support for elements that don't have symbols yet.
+		' 
+		' @param atomicNumber The atomic number of the chemical element.
+		' @return string The symbol of the chemical element.
+		function getElementSymbol(atomicNumber)
+			dim result
+			
+			result = ""
+			symbols = Array("n", "u", "b", "t", "q", "p", "h", "s", "o", "e")
+			
+			if atomicNumber <= UBound(ElementSymbols) then
+				result = ElementSymbols(atomicNumber)
+			else
+				for i = 1 to len(cStr(atomicNumber))
+					result = result & symbols(mid(cStr(atomicNumber), i, 1))
+				next
+				
+				result = pcase(result)
+			end if
+			
+			getElementSymbol = result
+		end function
+		
+		' Returns the maximum number of electrons allowed in the specified subshell.
+		' 
+		' @param subshell The electron subshell.
+		' @return integer The maximum number of electrons permitted in the subshell.
+		function maxElectrons(subshell)
+			select case lcase(right(subshell, 1))
+			case "s"
+				maxElectrons = 2
+			case "p"
+				maxElectrons = 6
+			case "d"
+				maxElectrons = 10
+			case "f"
+				maxElectrons = 14
+			case "g"
+				maxElectrons = 18
+			case "h"
+				maxElectrons = 23
+			case "i"
+				maxElectrons = 26
+			end select
+		end function
+		
+		' Calculate the electron configuration for a given atom.
+		' 
+		' @param atomicNumber The atomic number of the chemical element.
+		' @return string The electron configuration of the chemical element.
+		function getElectronConfiguration(atomicNumber)
+			dim electrons
+			dim configuration
+			
+			electrons = atomicNumber
+			configuration = ""
+			
+			for each subshell in Subshells
+				if electrons > maxElectrons(subshell) then
+					' A d subshell that is half-filled or full (ie 5 or 10 electrons) is more stable than the s subshell of the next shell.
+					if (subshell = "4s" and (atomicNumber = 24 or atomicNumber = 29)) _
+					or (subshell = "5s" and (atomicNumber = 41 or atomicNumber = 42 or atomicNumber = 44 or atomicNumber = 45 or atomicNumber = 47)) _
+					or (subshell = "6s" and (atomicNumber = 78 or atomicNumber = 79)) then
+						configuration = configuration & " " & subshell & "^1"
+						electrons = electrons - 1
+					' Special exception for palladium.
+					elseif subshell = "5s" and atomicNumber = 46 then
+						' do nothing; this subshell gets no electrons
+					else
+						configuration = configuration & " " & subshell & "^" & maxElectrons(subshell)
+						electrons = electrons - maxElectrons(subshell)
+					end if
+				else
+					configuration = configuration & " " & subshell & "^" & electrons
+					electrons = 0
+					exit for
+				end if
+			next
+			
+			getElectronConfiguration = trim(configuration)
+		end function
+]]>
+</script>
+
+</component>
