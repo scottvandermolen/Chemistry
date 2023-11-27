@@ -1,0 +1,4 @@
+# Reclassify Windows Script Component files as Classic ASP
+*.wsc linguist-language=asp
+
+.gitattributes linguist-language=gitattributes export-ignore
